@@ -101,6 +101,52 @@ class ComparisonTests(TestCase):
         self.assertNotEqual(version_1, version_3)
         self.assertNotEqual(version_2, version_3)
 
+    def test_distinct_versions_with_colliding_hashes(self) -> None:
+        class CollidingVersion(BasicVersion):
+            def __hash__(self) -> int:
+                return 42
+
+        first = CollidingVersion("first.txt")
+        second = CollidingVersion("second.txt")
+        self.assertEqual(hash(first), hash(second))
+        self.assertNotEqual(first, second)
+        self.assertEqual(len({first, second}), 2)
+
+    def test_equality_with_unrelated_objects(self) -> None:
+        version = BasicVersion("file.txt")
+        others: tuple[object, ...] = (None, [], {}, "file.txt", hash(version))
+        for other in others:
+            with self.subTest(other=other):
+                self.assertIs(version.__eq__(other), NotImplemented)
+                self.assertNotEqual(version, other)
+                self.assertNotEqual(other, version)
+
+    def test_equality_requires_matching_version_types(self) -> None:
+        class OtherVersion(BasicVersion):
+            pass
+
+        version = BasicVersion("file.txt")
+        other = OtherVersion("file.txt")
+        self.assertNotEqual(version, other)
+        self.assertNotEqual(other, version)
+
+    def test_equality_ignores_private_attributes(self) -> None:
+        first = BasicVersion("file.txt")
+        second = BasicVersion("file.txt")
+        vars(first)["_cached_value"] = "cache"
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+
+    def test_equality_uses_flattened_version_data(self) -> None:
+        class LowerCaseVersion(BasicVersion):
+            def to_flat_dict(self) -> VersionConfig:
+                return {"file_path": self.file_path.lower()}
+
+        first = LowerCaseVersion("FILE.txt")
+        second = LowerCaseVersion("file.txt")
+        self.assertEqual(first, second)
+        self.assertEqual(hash(first), hash(second))
+
     def test_complex_equality(self) -> None:
         version_1 = ComplexVersion("file.txt")
         version_1_again = ComplexVersion("file.txt")

@@ -61,7 +61,9 @@ class Version(ABC):
         return f"{type(self).__name__}({attr_string})"
 
     def __eq__(self, other: object) -> bool:
-        return hash(self) == hash(other)
+        if type(self) is not type(other):
+            return NotImplemented
+        return self.to_flat_dict() == other.to_flat_dict()
 
     def __hash__(self) -> int:
         flat_dict = self.to_flat_dict()
