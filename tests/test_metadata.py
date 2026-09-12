@@ -186,3 +186,8 @@ class MetadataFormattingTests(TestCase):
         new_string = self.metadata.format_string("The build id is $OTHER.", additional_values={"OTHER": "value"},
                                                  ignore_missing=True)
         self.assertEqual(new_string, "The build id is value.")
+
+    def test_interpolation_with_build_created_by(self) -> None:
+        with mock_environ({"BUILD_CREATED_BY": "alice"}):
+            new_string = self.metadata.format_string("Created by $BUILD_CREATED_BY.")
+        self.assertEqual(new_string, "Created by alice.")
